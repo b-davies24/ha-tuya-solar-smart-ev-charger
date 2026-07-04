@@ -13,3 +13,5 @@ So with that all out of the way, here were the goals:
  - Allow a single-phase car to charge at a higher rate than theoretically would be allowed by other solutions - i.e. allow importing one phase from the grid as long as the net grid import was zero
  - Be (mostly) intuitive
  - Have the ability to self-stop during peak tarrifs (between a certain set of hours)
+
+The idea of this is to provide a starting point for anyone else who is in a similar situation - I don't intend to keep this updated with every change that is made, but rather provide enough code and information for the Automations that it can be reproduced in newer versions of Home Assistant.
