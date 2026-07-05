@@ -63,6 +63,8 @@ For `charger_current`, this should be defined as the control exposed by Tuya for
 
 `delta_amps` is the amount by which the charging current is adjusted each iteration. If you are not on 240V power, or change this to another number, you will need to adjust the numbers in `new_amps`; `0.6` and `0.4` correspond to 0.6kW and 0.4kW - 2A corresponds to ~480W = 0.48kW at 240V, so the 0.4 and 0.6 are the thresholds at which the change in charging current is decreased/increased. These thresholds were set a bit above/below the 480W value so that (hopefully) the current is not bounced up/down every 10s.
 
+You will need to change the `0.4` and `0.6` threshold values in the case that you are using this to charge a three-phase vehicle, but that's out of scope ;)
+
 **Set Number Value** 
 
 Target: the same control that you defined for the above `charger_current` value
