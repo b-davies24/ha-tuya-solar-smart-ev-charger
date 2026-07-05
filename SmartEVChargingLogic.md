@@ -13,13 +13,13 @@ This step may/may not be needed - it all depends on what sensors are available i
 ## 2: Create the automation
 This will be explained step-by-step, so that it can be reproduced if things change in the future
 
-**When**
+### When
 
-Time pattern, with `/10` seconds; this makes it occur every 10s
+**Time Pattern**, with `/10` seconds; this makes it occur every 10s
 
-**And If**
+### And If
 
-State, with all the charger states except for the state shown when unplugged. This is an example of the YAML for this:
+**State**, with all the charger states except for the state shown when unplugged. This is an example of the YAML for this:
 ```
 condition: state
 entity_id: sensor.ev200d_ha_status
@@ -33,9 +33,13 @@ state:
 enabled: true
 ```
 
-**Then Do**
+### Then Do
 
-Define Variables:
+The core of this part was adapted from code in this YouTube video by Kiril Peyanski: https://www.youtube.com/watch?v=fEwp6qDZNoM
+
+I simplified it to remove any ability for home batteries - check out the video and/or blog (https://peyanski.com/) if you want to see the original, more detailed automation.
+
+**Define Variables**
 ```
 variables:
   charger_current: "{{ states('number.ev200d_ha_charging_current') | float(6) }}"
@@ -57,4 +61,55 @@ For `charger_current`, this should be defined as the control exposed by Tuya for
 
 `available_power` is the sensor that was set up/chosen in the above section
 
-`delta_amps` is the amount by which the charging current is adjusted each iteration. If you are not on 240V power, or change this to another number, you will need to adjust the numbers in `new_amps`; `0.6` and `0.4` correspond to 0.6kW and 0.4kW - 2A corresponds to ~480W = 0.48kW at 240V, so the 0.4 and 0.6 are the thresholds at which the change in charging current is decreased/increased.
+`delta_amps` is the amount by which the charging current is adjusted each iteration. If you are not on 240V power, or change this to another number, you will need to adjust the numbers in `new_amps`; `0.6` and `0.4` correspond to 0.6kW and 0.4kW - 2A corresponds to ~480W = 0.48kW at 240V, so the 0.4 and 0.6 are the thresholds at which the change in charging current is decreased/increased. These thresholds were set a bit above/below the 480W value so that (hopefully) the current is not bounced up/down every 10s.
+
+**Set Number Value** 
+
+Target: the same control that you defined for the above `charger_current` value
+
+Value: set it to `{{ new_amps }}`
+
+## Example YAML for this automation:
+```
+alias: Smart EV Charging - logic
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /10
+conditions:
+  - condition: state
+    entity_id: sensor.ev200d_ha_status
+    state:
+      - charging
+      - plugged_in
+      - waiting
+      - fault
+      - fault_unplugged
+      - paused
+    enabled: true
+actions:
+  - variables:
+      charger_current: "{{ states('number.ev200d_ha_charging_current') | float(6) }}"
+      available_power: "{{ states('sensor.power_available_for_charging') | float(0) }}"
+      delta_amps: 2
+      max_amps: 32
+      min_amps: 6
+      new_amps: |
+        {% if available_power > 0.6 %}
+          {{ [charger_current + delta_amps, max_amps] | min}}
+        {% elif available_power < 0.4 %}
+          {{ [charger_current - delta_amps, min_amps] | max}}
+        {% else %}
+          {{ charger_current }}
+        {% endif %}
+  - action: number.set_value
+    metadata: {}
+    target:
+      entity_id: number.ev200d_ha_charging_current
+    data:
+      value: "{{ new_amps }}"
+mode: single
+
+```
+
+
